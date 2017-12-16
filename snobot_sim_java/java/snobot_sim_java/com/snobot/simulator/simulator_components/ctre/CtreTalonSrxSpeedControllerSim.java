@@ -1,5 +1,6 @@
 package com.snobot.simulator.simulator_components.ctre;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,6 +45,12 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
             mD = 0;
             mF = 0;
             mIZone = 0;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "PIDFConstants [mP=" + mP + ", mI=" + mI + ", mD=" + mD + ", mF=" + mF + ", mIZone=" + mIZone + "]";
         }
     }
 
@@ -106,27 +113,27 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
 
     public void setPGain(double aP)
     {
-        mPidConstants.mP = aP;
+        mPidConstants.mP = aP / getPositionUnitConversion();
     }
 
     public void setIGain(double aI)
     {
-        mPidConstants.mI = aI;
+        mPidConstants.mI = aI / getPositionUnitConversion();
     }
 
     public void setDGain(double aD)
     {
-        mPidConstants.mD = aD;
+        mPidConstants.mD = aD / getPositionUnitConversion();
     }
 
     public void setFGain(double aF)
     {
-        mPidConstants.mF = aF;
+        mPidConstants.mF = aF / getPositionUnitConversion();
     }
 
     public void setIZone(double aIzone)
     {
-        mPidConstants.mIZone = aIzone;
+        mPidConstants.mIZone = aIzone / getPositionUnitConversion();
     }
 
     public PIDFConstants getPidConstants()
@@ -274,24 +281,18 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
 
         mLastError = error;
 
-//        DecimalFormat df = new DecimalFormat("#.##");
-//        System.out.println("Motion Magic... " + 
-//                "Goal: " + aControlGoal + ", " + 
-//                "CurPos: " + df.format(aCurrentPosition) + ", " + 
-//                "CurVel: " + df.format(aCurrentVelocity) + ", " + 
-//                "TimeToStop: " + df.format(time_to_stop) + ", " + 
-//                "TimeToDestination: " + df.format(time_to_destination) + ", " + 
-//                "err: " + df.format(error) + ", " +
-//                "maxa: " + df.format(mMotionMagicMaxAcceleration) + ", " + "maxv: " + df.format(mMotionMagicMaxVelocity));
-//
-//        if (time_to_destination > time_to_stop)
-//        {
-        // LOGGER.log(Level.DEBUG, " In constant velocity " + output);
-//        }
-//        else
-//        {
-        // LOGGER.log(Level.DEBUG, " In decel " + output);
-//        }
+        String motionType = "Output: " + output + " Stage: " + (time_to_destination > time_to_stop ? " In constant velocity " : " In decel ");
+        DecimalFormat df = new DecimalFormat("0.00");
+        System.out.println("Motion Magic... " + 
+                "Goal: " + aControlGoal + ",\t" + 
+                "CurPos: " + df.format(aCurrentPosition) + ",\t" + 
+                "CurVel: " + df.format(aCurrentVelocity) + ",\t" + 
+                "PIDF: " + mPidConstants + ",\t" + 
+                "TimeToStop: " + df.format(time_to_stop) + ",\t" + 
+                "TimeToDestination: " + df.format(time_to_destination) + ",\t" + 
+                "err: " + df.format(error) + ",\t" +
+                "maxa: " + df.format(mMotionMagicMaxAcceleration) + ",\t" + "maxv: " + df.format(mMotionMagicMaxVelocity) + ",\t" + 
+                motionType);
 
         return output;
     }
@@ -324,11 +325,12 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
         double v_term = mPidConstants.mF * aGoalVelocity;
         double output = p_term + d_term + v_term;
 
-//        DecimalFormat df = new DecimalFormat("#.##");
-//        System.out.println(output + "  (" + 
-//                "P: " + df.format(aCurrentPosition) + ", " + "V: " + df.format(aCurrentVelocity) + " - " + 
-//                "GP: " + aGoalPosition + ", GV: " + aGoalVelocity + ") " + 
-//                "P: " + p_term + ", V: " + v_term);
+        DecimalFormat df = new DecimalFormat("#.##");
+        sLOGGER.log(Level.WARN, 
+                output + "  (" + 
+                "P: " + df.format(aCurrentPosition) + ", " + "V: " + df.format(aCurrentVelocity) + " - " + 
+                "GP: " + aGoalPosition + ", GV: " + aGoalVelocity + ") " + 
+                "P: " + p_term + ", V: " + v_term);
 
         return output;
     }

@@ -63,9 +63,15 @@ public class TestCtreCanTalon_ControlPosition extends BaseSimulatorTest
         Assert.assertTrue(DataAccessorFactory.getInstance().getSimulatorDataAccessor().setSpeedControllerModel_Static(mRawHandle, motorConfig,
                 new StaticLoadMotorSimulationConfig(0.01)));
 
-        talon.setP(.11);
-        talon.setI(.005);
-        talon.setIZone(2);
+        double multiplier = 1;
+        if (mFeedbackDevice == FeedbackDevice.CtreMagEncoder_Absolute || mFeedbackDevice == FeedbackDevice.CtreMagEncoder_Relative)
+        {
+            multiplier = 4096;
+        }
+
+        talon.setP(.11 * multiplier);
+        talon.setI(.005 * multiplier);
+        talon.setIZone((int) (2 * multiplier));
 
         talon.set(36);
 

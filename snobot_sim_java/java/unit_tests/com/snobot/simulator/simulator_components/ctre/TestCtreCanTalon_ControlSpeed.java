@@ -63,9 +63,9 @@ public class TestCtreCanTalon_ControlSpeed extends BaseSimulatorTest
         Assert.assertTrue(DataAccessorFactory.getInstance().getSimulatorDataAccessor().setSpeedControllerModel_Static(mRawHandle, motorConfig,
                 new StaticLoadMotorSimulationConfig(.2)));
 
-        talon.setP(.045);
-        talon.setF(0.018);
-        talon.setIZone(1);
+        talon.setP(.045 * 4096);
+        talon.setF(0.018 * 4096);
+        talon.setIZone(1 * 4096);
 
         // 55.8 max velocity
         talon.set(40);

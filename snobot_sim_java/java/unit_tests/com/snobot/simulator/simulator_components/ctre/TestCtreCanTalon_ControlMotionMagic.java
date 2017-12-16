@@ -60,15 +60,16 @@ public class TestCtreCanTalon_ControlMotionMagic extends BaseSimulatorTest
         Assert.assertTrue(DataAccessorFactory.getInstance().getSimulatorDataAccessor().setSpeedControllerModel_Static(mRawHandle, motorConfig,
                 new StaticLoadMotorSimulationConfig(.2)));
 
-        talon.setP(.11);
-        talon.setI(.005);
-        talon.setF(0.018);
-        talon.setIZone(2);
+        talon.setFeedbackDevice(mFeedbackDevice);
+        talon.changeControlMode(TalonControlMode.MotionMagic);
+
+        talon.setP(.11 * 4096);
+        talon.setI(.005 * 4096);
+        talon.setF(0.018 * 4096);
+        talon.setIZone(2 * 4096);
 
         talon.configEncoderCodesPerRev(100);
 
-        talon.setFeedbackDevice(mFeedbackDevice);
-        talon.changeControlMode(TalonControlMode.MotionMagic);
         talon.setMotionMagicCruiseVelocity(12);
         talon.setMotionMagicAcceleration(24);
         talon.set(30 * 12);
