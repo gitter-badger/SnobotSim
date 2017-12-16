@@ -1,0 +1,125 @@
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath 'gradle.plugin.edu.wpi.first:native-utils:1.2.9'
+    }
+}
+apply plugin: 'edu.wpi.first.NativeUtils'
+import edu.wpi.first.nativeutils.NativeUtils
+
+apply plugin: "java"
+
+//////////////////////////////////////////////////////
+// Define Your Properties
+//////////////////////////////////////////////////////
+ext.robotName = "Robot"
+//////////////////////////////////////////////////////
+
+
+ext.wrapperDir = "$projectDir/build/sim_wrapper"
+
+apply from: "wrapper_tools/generate_wrapper_files.gradle"
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["${wrapperDir}/java"]
+        }
+    }
+}
+
+def jniClasses = ["com.snobot.simulator.cpp_wrapper.${robotName}.RobotSimulatorJni"]
+
+model {
+    dependencyConfigs {
+        opencv(DependencyConfig) {
+            groupId = 'org.opencv'
+            artifactId = 'opencv-cpp'
+            headerClassifier = 'headers'
+            ext = 'zip'
+            version = '3.2.0'
+            sharedConfigs = [ simulatorRobotWrapperShared: [] ]
+        }
+    }
+    jniConfigs {
+        simulatorRobotWrapperShared(JNIConfig) {
+            jniDefinitionClasses = jniClasses
+            jniArmHeaderLocations = [ all: file("${projectDir}/wrapper_tools/arm-linux-jni") ]
+            sourceSets = [ project.sourceSets.main ]
+        }
+        simulatorRobotWrapperStatic(JNIConfig) {
+            jniDefinitionClasses = jniClasses
+            jniArmHeaderLocations = [ all: file("${projectDir}/wrapper_tools/arm-linux-jni") ]
+            sourceSets = [ project.sourceSets.main ]
+        }
+    }
+    
+    components {
+        simulatorRobotWrapperShared(NativeLibrarySpec) {
+            binaries {
+                all {
+                   it.lib library: 'CppExampleShared', linkage: 'static'
+                }
+            }
+            
+            sources {
+                cpp {
+                    source {
+                        srcDirs = ["${wrapperDir}/src"]
+                        includes = ['**/*.cpp']
+                    }
+                    exportedHeaders {
+                        srcDirs = ["${wrapperDir}/cpp" ]
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+jar {
+    description = 'Generates jar contiaining the simulation tools'
+    baseName = "${robotName}CppSimulator"
+    duplicatesStrategy = 'exclude'
+
+    dependsOn { classes }
+    
+    model {
+        binaries {
+            withType(SharedLibraryBinarySpec) { binary ->
+                if (binary.component.name == 'simulatorRobotWrapperShared') {
+                    from(binary.sharedLibraryFile) {
+                        into NativeUtils.getPlatformPath(binary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+//    def wpilibc_path = "$rootDir/build/dependencies/wpilibc/" + os_name + 'x86-64/' + os_name + "/x86-64/shared"
+//    println "WPILIBC "
+//    println wpilibc_path
+//    from(wpilibc_path) {
+//        into output_path
+//        include "*.dll"
+//        include "*.so"
+//    }
+//    
+//    def opencv_path = "$rootDir/build/dependencies/opencv-cpp/" + os_name + 'x86-64/' + os_name + "/x86-64/shared"
+//    println "OPEN CV "
+//    println opencv_path
+//    from(opencv_path) {
+//        into output_path
+//        include "*.dll"
+//        include "*.so"
+//    }

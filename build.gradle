@@ -43,13 +43,13 @@ ext.getWpilibcVersion = {
     return allwpilibVersion()
 }
 ext.getWpiUtilVersion = {
-    return '+'
+    return '3.0.0-beta-3-20171203231238-6-g4e0ed79'
 }
 ext.getNtCoreVersion = {
-    return '4.0.0-beta-1-20171028041924-2-gfd32350'
+    return '4.0.0-beta-3-20171203230442-4-gaa2de65'
 }
 ext.getCsCoreVersion = {
-    return '1.1.0-alpha-1-20171028025024-4-gb9c8ebe'
+    return '1.1.0-beta-3-20171203230852-2-gcf828ca'
 }
 ext.getWpilibOpencvVersion = {
     return '3.2.0'

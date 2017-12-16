@@ -5,8 +5,7 @@ apply plugin: 'edu.wpi.first.NativeUtils'
 
 apply from: '../config.gradle'
 apply from: "$rootDir/extract_hal_headers.gradle"
-
-
+apply from: "wrapper_tools/build_simulator.gradle"
 
 model {
     dependencyConfigs {
@@ -16,22 +15,22 @@ model {
             headerClassifier = 'headers'
             ext = 'zip'
             version = getWpiUtilVersion()
-            sharedConfigs = [ CppExampleShared: [] ]
+            sharedConfigs = [ CppExampleShared: [], simulatorRobotWrapperShared: [] ]
         }
         wpilibc(DependencyConfig) {
             groupId = 'edu.wpi.first.wpilibc'
             artifactId = 'wpilibc'
             headerClassifier = 'headers'
             ext = 'zip'
-            version = getWpiUtilVersion()
-            sharedConfigs = [ CppExampleShared: [] ]
+            version = getWpilibcVersion()
+            sharedConfigs = [ CppExampleShared: [], simulatorRobotWrapperShared: [] ]
         }
         ntcore(DependencyConfig) {
             groupId = 'edu.wpi.first.ntcore'
             artifactId = 'ntcore-cpp'
             headerClassifier = 'headers'
             ext = 'zip'
-            version = '4.+'
+            version = getNtCoreVersion()
             sharedConfigs = [ CppExampleShared: [] ]
         }
     }
