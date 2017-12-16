@@ -20,6 +20,7 @@ include 'snobot_sim_utilities'
 include 'snobot_sim_gui'
 include 'ctre_override'
 include 'sim_extension_navx'
+include 'cpp_example'
 
 
 rootProject.name = 'CppSimulator'
