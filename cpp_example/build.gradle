@@ -15,7 +15,9 @@ model {
             headerClassifier = 'headers'
             ext = 'zip'
             version = getWpiUtilVersion()
-            sharedConfigs = [ CppExampleShared: [], simulatorRobotWrapperShared: [] ]
+            sharedConfigs = [ CppExampleShared: [], 
+                              simulatorRobotWrapperShared: [],
+                              testBinary: [] ]
         }
         wpilibc(DependencyConfig) {
             groupId = 'edu.wpi.first.wpilibc'
@@ -23,7 +25,9 @@ model {
             headerClassifier = 'headers'
             ext = 'zip'
             version = getWpilibcVersion()
-            sharedConfigs = [ CppExampleShared: [], simulatorRobotWrapperShared: [] ]
+            sharedConfigs = [ CppExampleShared: [], 
+                              simulatorRobotWrapperShared: [],
+                              testBinary: [] ]
         }
         ntcore(DependencyConfig) {
             groupId = 'edu.wpi.first.ntcore'
@@ -31,7 +35,17 @@ model {
             headerClassifier = 'headers'
             ext = 'zip'
             version = getNtCoreVersion()
-            sharedConfigs = [ CppExampleShared: [] ]
+            sharedConfigs = [ CppExampleShared: [],
+                              testBinary: [] ]
+        }
+        cscore(DependencyConfig) {
+            groupId = 'edu.wpi.first.cscore'
+            artifactId = 'cscore-cpp'
+            headerClassifier = 'headers'
+            ext = 'zip'
+            version = getCsCoreVersion()
+            sharedConfigs = [ CppExampleShared: [],
+                              testBinary: [] ]
         }
     }
     components {
@@ -41,6 +55,21 @@ model {
                 cpp {
                     source {
                         srcDirs = ['src']
+                        includes = ['**/*.cpp']
+                    }
+                    exportedHeaders {
+                        srcDirs = ["src/", 
+                                   "${extractHalHeadersZip.libsdir}",  ]
+                    }
+                }
+            }
+        }
+        testBinary(NativeExecutableSpec) {
+            baseName = 'CppExampleRobotTester'
+            sources {
+                cpp {
+                    source {
+                        srcDirs = ["src"]
                         includes = ['**/*.cpp']
                     }
                     exportedHeaders {
@@ -73,3 +102,13 @@ model {
         }
     }
 }
+
+//cscore
+//ntcore
+//opencv_core320
+//opencv_imgcodecs320
+//opencv_imgproc320
+//wpiHal
+//wpilibc
+//wpiutil
+
