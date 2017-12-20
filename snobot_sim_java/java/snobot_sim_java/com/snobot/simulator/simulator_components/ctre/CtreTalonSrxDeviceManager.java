@@ -175,6 +175,7 @@ public class CtreTalonSrxDeviceManager implements ICanDeviceManager
         byte feedbackDevice = (byte) ((commandSection & 0x1E) >> 1);
         byte overrideLimitSwitchesRaw = (byte) ((commandSection & 0xE0) >> 5);
         wrapper.setCanFeedbackDevice(feedbackDevice);
+        wrapper.setCurrentProfile(profileSelect);
 
         if (overrideLimitSwitchesRaw != 0x1)
         {
@@ -278,180 +279,210 @@ public class CtreTalonSrxDeviceManager implements ICanDeviceManager
 
         int rawValue = aBuffer.getInt(1);
         double floatValue = rawValue * 0.0000002384185791015625;
+        
+        switch(commandType)
+        {
 
-        // P gain
-        if (commandType == 1)
-        {
-            wrapper.setPGain(floatValue);
-        }
-        // I gain
-        else if (commandType == 2)
-        {
-            wrapper.setIGain(floatValue);
-        }
-        // D gain
-        else if (commandType == 3)
-        {
-            wrapper.setDGain(floatValue);
-        }
-        // F gain
-        else if (commandType == 4)
-        {
-            wrapper.setFGain(floatValue);
-        }
-        // I Zone
-        else if (commandType == 5)
-        {
-            wrapper.setIZone(rawValue);
-        }
-
-        else if (commandType == 6)
-        {
-            sLOGGER.log(Level.INFO, "setCloseLoopRampRate is not supported");
-        }
-        else if (commandType == 6)
-        {
-            sLOGGER.log(Level.INFO, "setForwardSoftLimit is not supported");
-        }
-        else if (commandType == 21)
-        {
-            sLOGGER.log(Level.INFO, "setForwardSoftLimit is not supported");
-        }
-        else if (commandType == 22)
-        {
-            sLOGGER.log(Level.INFO, "setReverseSoftLimit is not supported");
-        }
-        else if (commandType == 23)
-        {
-            sLOGGER.log(Level.INFO, "enableForwardSoftLimit is not supported");
-        }
-        else if (commandType == 32)
-        {
-            sLOGGER.log(Level.INFO, "ConfigFwdLimitSwitchNormallyOpen is not supported");
-        }
-        else if (commandType == 33)
-        {
-            sLOGGER.log(Level.INFO, "ConfigRevLimitSwitchNormallyOpen is not supported");
-        }
-        else if (commandType == 44)
-        {
-            sLOGGER.log(Level.INFO, "setForwardSoftLimit is not supported");
-        }
-        else if (commandType == 73)
-        {
+        /////////////////////////
+        // PID - Slot 0
+        /////////////////////////
+        case 1:
+            wrapper.setPGain(0, floatValue);
+            break;
+        case 2:
+            wrapper.setIGain(0, floatValue);
+            break;
+        case 3:
+            wrapper.setDGain(0, floatValue);
+            break;
+        case 4:
+            wrapper.setFGain(0, floatValue);
+            break;
+        case 5:
+            wrapper.setIZone(0, rawValue);
+            break;
+        case 6:
+            logUnsupportedSetParam(commandType, "setCloseLoopRampRate");
+            break;
+        case 11:
+            wrapper.setPGain(1, floatValue);
+            break;
+        case 12:
+            wrapper.setIGain(1, floatValue);
+            break;
+        case 13:
+            wrapper.setDGain(1, floatValue);
+            break;
+        case 14:
+            wrapper.setFGain(1, floatValue);
+            break;
+        case 15:
+            wrapper.setIZone(1, rawValue);
+            break;
+        case 16:
+            logUnsupportedSetParam(commandType, "setCloseLoopRampRate");
+            break;
+        case 21:
+            logUnsupportedSetParam(commandType, "setForwardSoftLimit");
+            break;
+        case 22:
+            logUnsupportedSetParam(commandType, "setReverseSoftLimit");
+            break;
+        case 23:
+            logUnsupportedSetParam(commandType, "enableForwardSoftLimit");
+            break;
+        case 24:
+            logUnsupportedSetParam(commandType, "enableReverseSoftLimit");
+            break;
+        case 32:
+            logUnsupportedSetParam(commandType, "ConfigFwdLimitSwitchNormallyOpen");
+            break;
+        case 33:
+            logUnsupportedSetParam(commandType, "ConfigRevLimitSwitchNormallyOpen");
+            break;
+        case 44:
+            logUnsupportedSetParam(commandType, "setForwardSoftLimit");
+            break;
+        case 73:
             double position = rawValue / 256;
             wrapper.reset(position, wrapper.getVelocity(), wrapper.getCurrent());
-        }
-        else if (commandType == 77)
-        {
+            break;
+        case 77:
             wrapper.reset(rawValue, wrapper.getVelocity(), wrapper.getCurrent());
-        }
-        else if (commandType == 93)
-        {
-            sLOGGER.log(Level.INFO, "clearIAccum is not supported");
-        }
-        else if (commandType == 105 || commandType == 107)
-        {
-            sLOGGER.log(Level.INFO, "configNominalOutputVoltage is not supported, but it probably shouldn't matter ");
-        }
-        else if (commandType == 104 || commandType == 106)
-        {
-            sLOGGER.log(Level.INFO, "configPeakOutputVoltage is not supported, but it probably shouldn't matter ");
-        }
-        else if (commandType == 108 || commandType == 100)
-        {
-            sLOGGER.log(Level.INFO, "enableZeroSensorPositionOnIndex is not supported, but it probably shouldn't matter ");
-        }
-        else if (commandType == 111)
-        {
-            sLOGGER.log(Level.INFO, "setAllowableClosedLoopErr is not supported");
-        }
-        else if (commandType == 112)
-        {
-            sLOGGER.log(Level.INFO, "configPotentiometerTurns is not supported");
-        }
-        else if (commandType == 113)
-        {
-            sLOGGER.log(Level.INFO, "configEncoderCodesPerRev is not supported");
-        }
-        else if (commandType == 114)
-        {
-            sLOGGER.log(Level.INFO, "setPulseWidthPosition is not supported");
-        }
-        else if (commandType == 115)
-        {
-            sLOGGER.log(Level.INFO, "setAnalogPosition is not supported");
-        }
-        else if (commandType == 119)
-        {
-            sLOGGER.log(Level.INFO, "clearMotionProfileHasUnderrun is not supported");
-        }
-        else if (commandType == 122)
-        {
+            break;
+        case 93:
+            logUnsupportedSetParam(commandType, "clearIAccum");
+            break;
+        case 94:
+        case 95:
+        case 96:
+        case 97:
+        case 109:
+            logUnsupportedSetParam(commandType, "setStatusFrameRateMs");
+            break;
+        case 105:
+        case 107:
+            logUnsupportedSetParam(commandType, "configNominalOutputVoltage");
+            break;
+        case 104:
+        case 106:
+            logUnsupportedSetParam(commandType, "configPeakOutputVoltage");
+            break;
+        case 108:
+        case 100:
+            logUnsupportedSetParam(commandType, "enableZeroSensorPositionOnIndex");
+            break;
+        case 111:
+            logUnsupportedSetParam(commandType, "setAllowableClosedLoopErr");
+            break;
+        case 112:
+            logUnsupportedSetParam(commandType, "configPotentiometerTurns");
+            break;
+        case 113:
+            logUnsupportedSetParam(commandType, "configEncoderCodesPerRev");
+            break;
+        case 114:
+            logUnsupportedSetParam(commandType, "setPulseWidthPosition");
+            break;
+        case 115:
+            logUnsupportedSetParam(commandType, "setAnalogPosition");
+            break;
+        case 116:
+            logUnsupportedSetParam(commandType, "setVoltageCompensationRampRate");
+            break;
+        case 119:
+            logUnsupportedSetParam(commandType, "clearMotionProfileHasUnderrun");
+            break;
+        case 122:
             wrapper.setMotionMagicMaxAcceleration(rawValue);
-        }
-        else if (commandType == 123)
-        {
+            break;
+        case 123:
             wrapper.setMotionMagicMaxVelocity(rawValue);
+            break;
+        case 125:
+            logUnsupportedSetParam(commandType, "setCurrentLimit");
+            break;
+        case -112:
+            logUnsupportedSetParam(commandType, "setCurrentLimit");
+            break;
+        case -111:
+            logUnsupportedSetParam(commandType, "enableZeroSensorPositionOnReverseLimit");
+            break;
+        default:
+            logUnsupportedSetParam(commandType);
+            break;
         }
+    }
 
-        else
-        {
-            sLOGGER.log(Level.ERROR, "Unknown SetParam command: " + commandType);
-        }
+    private void logUnsupportedSetParam(int commandType)
+    {
+        sLOGGER.log(Level.ERROR, "************* Unknown SetParam command: " + commandType + " ************* "
+                + "This is an unexpected call, please make an issue at https://github.com/pjreiniger/SnobotSim");
+    }
+
+    private void logUnsupportedSetParam(int commandType, String aFunctionName)
+    {
+        sLOGGER.log(Level.WARN, aFunctionName + " (command=" + commandType + ") is not supported."
+                + "  If this is *crucial* to simulating your robot, please make an issue at https://github.com/pjreiniger/SnobotSim");
     }
 
     private void handleParamRequest(ByteBuffer aBuffer, int aPort)
     {
-        sLOGGER.log(Level.TRACE, "Getting parameters...");
 
         CtreTalonSrxSpeedControllerSim wrapper = getWrapperHelper(aPort);
         aBuffer.order(ByteOrder.LITTLE_ENDIAN);
         byte commandType = aBuffer.get(0);
+        sLOGGER.log(Level.TRACE, "Getting parameters... " + commandType);
 
         double floatValue = 0;
         boolean isFloat = true;
-
-        // P gain
-        if (commandType == 1)
+        
+        switch(commandType)
         {
-            floatValue = wrapper.getPidConstants().mP;
-        }
-        // I gain
-        else if (commandType == 2)
-        {
-            floatValue = wrapper.getPidConstants().mI;
-        }
-        // D gain
-        else if (commandType == 3)
-        {
-            floatValue = wrapper.getPidConstants().mD;
-        }
-        // F gain
-        else if (commandType == 4)
-        {
-            floatValue = wrapper.getPidConstants().mF;
-        }
-        // I Zone
-        else if (commandType == 5)
-        {
-            floatValue = wrapper.getPidConstants().mIZone;
+        case 1:
+            floatValue = wrapper.getPidConstants(0).mP;
+            break;
+        case 2:
+            floatValue = wrapper.getPidConstants(0).mI;
+            break;
+        case 3:
+            floatValue = wrapper.getPidConstants(0).mD;
+            break;
+        case 4:
+            floatValue = wrapper.getPidConstants(0).mF;
+            break;
+        case 5:
+            floatValue = wrapper.getPidConstants(0).mIZone;
             isFloat = false;
-        }
-        // getCloseLoopRampRate
-        else if (commandType == 6)
-        {
+            break;
+        case 6:
             sLOGGER.log(Level.INFO, "getCloseLoopRampRate is not supported");
-        }
-        // GetIaccum
-        else if (commandType == 93)
-        {
+            break;
+        case 11:
+            floatValue = wrapper.getPidConstants(1).mP;
+            break;
+        case 12:
+            floatValue = wrapper.getPidConstants(1).mI;
+            break;
+        case 13:
+            floatValue = wrapper.getPidConstants(1).mD;
+            break;
+        case 14:
+            floatValue = wrapper.getPidConstants(1).mF;
+            break;
+        case 15:
+            floatValue = wrapper.getPidConstants(1).mIZone;
+            isFloat = false;
+            break;
+        case 93:
             sLOGGER.log(Level.INFO, "GetIaccum is not supported");
+            break;
+        default:
+            sLOGGER.log(Level.ERROR, "************* Unknown GetParam command: " + commandType + " ************* "
+                    + "If this is *crucial* to simulating your robot, please make an issue at https://github.com/pjreiniger/SnobotSim");
+            break;
         }
-        else
-        {
-            sLOGGER.log(Level.ERROR, "Unknown GetParam command: " + commandType);
-        }
+
         int rawValue;
         if(isFloat)
         {

@@ -27,7 +27,7 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
 
     public enum FeedbackDevice
     {
-        Encoder, Analog
+        QuadEncoder, Encoder, Analog
     }
 
     protected class PIDFConstants
@@ -79,7 +79,8 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
     protected ControlType mControlType;
 
     // Feedback control
-    protected PIDFConstants mPidConstants;
+    protected PIDFConstants[] mPidConstants= {new PIDFConstants(), new PIDFConstants()};
+    protected int mCurrentPidProfile;
     protected FeedbackDevice mFeedbackDevice;
     protected double mControlGoal;
     protected double mSumError;
@@ -102,7 +103,7 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
 
         mCanHandle = aCanHandle;
 
-        mPidConstants = new PIDFConstants();
+        mCurrentPidProfile = 0;
         mControlType = ControlType.Raw;
 
         mMotionProfilePoints = new LinkedList<>();
@@ -111,34 +112,34 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
         mFollowers = new ArrayList<>();
     }
 
-    public void setPGain(double aP)
+    public void setPGain(int aSlot, double aP)
     {
-        mPidConstants.mP = aP / getPositionUnitConversion();
+        mPidConstants[aSlot].mP = aP / getPositionUnitConversion();
     }
 
-    public void setIGain(double aI)
+    public void setIGain(int aSlot, double aI)
     {
-        mPidConstants.mI = aI / getPositionUnitConversion();
+        mPidConstants[aSlot].mI = aI / getPositionUnitConversion();
     }
 
-    public void setDGain(double aD)
+    public void setDGain(int aSlot, double aD)
     {
-        mPidConstants.mD = aD / getPositionUnitConversion();
+        mPidConstants[aSlot].mD = aD / getPositionUnitConversion();
     }
 
-    public void setFGain(double aF)
+    public void setFGain(int aSlot, double aF)
     {
-        mPidConstants.mF = aF / getPositionUnitConversion();
+        mPidConstants[aSlot].mF = aF / getPositionUnitConversion();
     }
 
-    public void setIZone(double aIzone)
+    public void setIZone(int aSlot, double aIzone)
     {
-        mPidConstants.mIZone = aIzone / getPositionUnitConversion();
+        mPidConstants[aSlot].mIZone = aIzone / getPositionUnitConversion();
     }
 
-    public PIDFConstants getPidConstants()
+    public PIDFConstants getPidConstants(int aSlot)
     {
-        return mPidConstants;
+        return mPidConstants[aSlot];
     }
 
     public void setPositionGoal(int aDemand)
@@ -224,15 +225,15 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
         double dErr = error - mLastError;
         
         mSumError += error;
-        if (error > mPidConstants.mIZone)
+        if (error > mPidConstants[mCurrentPidProfile].mIZone)
         {
             mSumError = 0;
         }
 
-        double pComp = mPidConstants.mP * error;
-        double iComp = mPidConstants.mI * mSumError;
-        double dComp = mPidConstants.mD * dErr;
-        double fComp = mPidConstants.mF * aGoal;
+        double pComp = mPidConstants[mCurrentPidProfile].mP * error;
+        double iComp = mPidConstants[mCurrentPidProfile].mI * mSumError;
+        double dComp = mPidConstants[mCurrentPidProfile].mD * dErr;
+        double fComp = mPidConstants[mCurrentPidProfile].mF * aGoal;
         
         double output = pComp + iComp + dComp + fComp;
 
@@ -269,10 +270,10 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
         double time_to_destination = error / aCurrentVelocity;
         
 
-        double pComp = mPidConstants.mP * error;
-        double iComp = mPidConstants.mI * mSumError;
-        double dComp = mPidConstants.mD * dErr;
-        double fComp = mPidConstants.mF * mMotionMagicMaxVelocity;
+        double pComp = mPidConstants[mCurrentPidProfile].mP * error;
+        double iComp = mPidConstants[mCurrentPidProfile].mI * mSumError;
+        double dComp = mPidConstants[mCurrentPidProfile].mD * dErr;
+        double fComp = mPidConstants[mCurrentPidProfile].mF * mMotionMagicMaxVelocity;
 
         double output = pComp + iComp + dComp + fComp;
 
@@ -319,10 +320,10 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
     {
         double error = aGoalPosition - aCurrentPosition;
 
-        double p_term = error * mPidConstants.mP;
+        double p_term = error * mPidConstants[mCurrentPidProfile].mP;
         double d_term = 0;// mPidConstants.mD * ((error - last_error_) /
                           // segment.dt - segment.vel);
-        double v_term = mPidConstants.mF * aGoalVelocity;
+        double v_term = mPidConstants[mCurrentPidProfile].mF * aGoalVelocity;
         double output = p_term + d_term + v_term;
 
         DecimalFormat df = new DecimalFormat("#.##");
@@ -392,13 +393,19 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
         }
     }
 
+    public void setCurrentProfile(byte profileSelect)
+    {
+        mCurrentPidProfile = profileSelect;
+    }
+
     public void setCanFeedbackDevice(byte feedbackDevice)
     {
         FeedbackDevice newDevice = null;
         switch (feedbackDevice)
         {
+        // Default feedback sensor, handle with care
         case 0:
-            // Not an error
+            // newDevice = FeedbackDevice.QuadEncoder;
             break;
         case 2:
             newDevice = FeedbackDevice.Analog;
@@ -425,6 +432,31 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
                 registerFeedbackSensor();
                 sLOGGER.log(Level.DEBUG, "Setting feedback device to " + newDevice);
             }
+            // if (mFeedbackDevice != null && mFeedbackDevice !=
+            // FeedbackDevice.QuadEncoder)
+            // {
+            // sLOGGER.log(Level.ERROR, "The simulator does not like you
+            // changing the feedback device attached to talon " + mCanHandle + "
+            // from "
+            // + mFeedbackDevice + " to " + newDevice);
+            // }
+            // else if (newDevice != FeedbackDevice.QuadEncoder)
+            // {
+            // if(mFeedbackDevice == FeedbackDevice.QuadEncoder)
+            // {
+            // System.out.println("UH OHHHHHH");
+            // }
+            //
+            // mFeedbackDevice = newDevice;
+            // registerFeedbackSensor();
+            // sLOGGER.log(Level.DEBUG, "Setting feedback device to " +
+            // newDevice);
+            // }
+            // else if (newDevice == FeedbackDevice.QuadEncoder)
+            // {
+            // mFeedbackDevice = newDevice;
+            // registerFeedbackSensor();
+            // }
         }
     }
 
