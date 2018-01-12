@@ -6,7 +6,7 @@ import org.gradle.internal.os.OperatingSystem
 repositories {
     mavenCentral()
     maven {
-        url "http://dev.imjac.in/maven/"
+        url getJaci3rdPartyMirror()
     }
 }
 
@@ -17,7 +17,6 @@ apply plugin: 'java'
 apply plugin: 'jacoco'
 
 apply from: '../config.gradle'
-apply from: "$rootDir/extract_hal_headers.gradle"
 
 
 apply from: "../create_version_file.gradle"
@@ -85,6 +84,14 @@ task combineNativeLibrariesIntoOne(type: Jar) {
     from(navx_path + 'libnavx_simulator.so') { 
         into "linux/x86-64"
     }
+    
+    def ctre_path = '../ctre_override/build/libs/ctreMockHooks/shared/'
+    from(ctre_path + 'CtreMockHooks.dll') { 
+        into "windows/x86-64"
+    }
+    from(ctre_path + 'libCtreMockHooks.so') { 
+        into "linux/x86-64"
+    }
 }
 build.dependsOn packageNativeFilesInJar
 
@@ -102,7 +109,6 @@ dependencies {
     compile group: 'log4j', name: 'log4j', version: '1.2.16'
     
     testCompile 'junit:junit:4.12'
-    testCompile "thirdparty.frc.kauai:Navx-Java:+"
     testCompile 'edu.wpi.first.wpilibj:wpilibj-java:' + getWpilibjVersion()
     testRuntime 'edu.wpi.first.ntcore:ntcore-jni:' + getNtCoreVersion() + ':all'
     testRuntime 'edu.wpi.first.cscore:cscore-jni:' + getCsCoreVersion() + ':all'
@@ -111,8 +117,8 @@ dependencies {
     testRuntime combineNativeLibrariesIntoOne.outputs.files
     
     testCompile project(':ctre_override')
-    testCompile "thirdparty.frc.ctre:Toolsuite-Java:4.4.1.14"
-    testRuntime project(':ctre_override').combineNativeLibrariesIntoOne.outputs.files
+    testCompile "openrio.mirror.third.ctre:CTRE-phoenix-java:" + getCtreVersion()
+    testCompile "openrio.mirror.third.kauailabs:navx-java:" + getNavxVersion()
 }
 
 def jniClasses = [
@@ -138,7 +144,6 @@ model {
         snobotSimJavaJniShared(JNIConfig) {
             jniDefinitionClasses = jniClasses
             jniArmHeaderLocations = [ all: file("${projectDir}/src/arm-linux-jni") ]
-            sourceSets = [ project.sourceSets.main ]
             sourceSets = [ project.sourceSets.main ]
         }
         snobotSimJavaJniStatic(JNIConfig) {
@@ -179,6 +184,22 @@ model {
             sharedConfigs = [ snobotSimJavaJniShared: [] ]
             staticConfigs = [ snobotSimJavaJniStatic: [] ]
         }
+        halsim(DependencyConfig) {
+            groupId = 'edu.wpi.first.hal'
+            artifactId = 'hal'
+            headerClassifier = 'headers'
+            ext = 'zip'
+            version = getHalHeadersVersion()
+            sharedConfigs = [ snobotSimJavaJniShared: [] ]
+        }
+        adxfamily(DependencyConfig) {
+            groupId = 'edu.wpi.first.halsim'
+            artifactId = 'halsim-adx_gyro_accelerometer'
+            headerClassifier = 'headers'
+            ext = 'zip'
+            version = getHalHeadersVersion()
+            sharedConfigs = [ snobotSimJavaJniShared: [] ]
+        }
     }
     components {
         snobotSimJavaJniShared(NativeLibrarySpec) {
@@ -190,7 +211,7 @@ model {
                         includes = ['**/*.cpp']
                     }
                     exportedHeaders {
-                        srcDirs = ["cpp/lib", "${extractHalHeadersZip.libsdir}", "${extractHalSimAdxHeadersZip.libsdir}"]
+                        srcDirs = ["cpp/lib"]
                     }
                     lib project: ':sim_extension_navx', library: 'navx_simulator', linkage: 'shared'
                 }
@@ -199,28 +220,17 @@ model {
 
     }
     binaries {
-        all {
-            tasks.withType(CppCompile) {
-                dependsOn extractHalHeadersZip
-                dependsOn extractHalSimAdxHeadersZip
-            }
-        }
         withType(NativeBinarySpec) {
-        
-            if(it.targetPlatform.architecture.name != "athena")
-            {
-                addHalSimToLinker(linker)
-                addHalSimAdxToLinker(linker)
-            }
-            else
-            {
-                buildable = false
-            }
+            it.lib project: ':ctre_override', library: 'CtreMockHooks', linkage: 'shared'
         }
         withType(StaticLibraryBinarySpec) {
             it.buildable = false
         }
     }
+}
+
+tasks.withType(Test) {
+    systemProperty "java.library.path", "$rootDir/ctre_override/build/libs/ctrePhoenixJava/shared"
 }
 
 apply from: "publish.gradle"

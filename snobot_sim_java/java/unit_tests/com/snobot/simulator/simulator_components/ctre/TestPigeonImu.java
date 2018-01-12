@@ -9,9 +9,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.ctre.CANTalon;
-import com.ctre.PigeonImu;
-import com.ctre.PigeonImu.FusionStatus;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import com.ctre.phoenix.sensors.PigeonIMU;
+import com.ctre.phoenix.sensors.PigeonIMU.FusionStatus;
 import com.snobot.simulator.wrapper_accessors.DataAccessorFactory;
 import com.snobot.test.utilities.BaseSimulatorTest;
 
@@ -41,19 +41,19 @@ public class TestPigeonImu extends BaseSimulatorTest
     @Test
     public void testPigeonInSeries()
     {
-        PigeonImu imu = new PigeonImu(mDeviceId);
+        PigeonIMU imu = new PigeonIMU(mDeviceId);
         testImu(imu);
     }
 
     @Test
     public void testPigeonInTalon()
     {
-        CANTalon talon = new CANTalon(mDeviceId);
-        PigeonImu imu = new PigeonImu(talon);
+        TalonSRX talon = new TalonSRX(mDeviceId);
+        PigeonIMU imu = new PigeonIMU(talon);
         testImu(imu);
     }
 
-    private void testImu(PigeonImu imu)
+    private void testImu(PigeonIMU imu)
     {
         final double ANGLE_EPSILON = 1 / 16.0;
 
@@ -67,7 +67,6 @@ public class TestPigeonImu extends BaseSimulatorTest
         int zPort = basePort + 2;
 
         double[] rawAngles = new double[3];
-        double fusedHeading = 0;
         FusionStatus fusionStatus = new FusionStatus();
 
         Assert.assertEquals(3, DataAccessorFactory.getInstance().getGyroAccessor().getPortList().size());
@@ -79,9 +78,9 @@ public class TestPigeonImu extends BaseSimulatorTest
         Assert.assertTrue(DataAccessorFactory.getInstance().getAccelerometerAccessor().getPortList().contains(yPort));
         Assert.assertTrue(DataAccessorFactory.getInstance().getAccelerometerAccessor().getPortList().contains(zPort));
 
-        imu.GetRawGyro(rawAngles);
-        fusedHeading = imu.GetFusedHeading(fusionStatus);
-        Assert.assertEquals(0, fusedHeading, ANGLE_EPSILON);
+        imu.getRawGyro(rawAngles);
+        imu.getFusedHeading(fusionStatus);
+        Assert.assertEquals(0, fusionStatus.heading, ANGLE_EPSILON);
         Assert.assertEquals(0, rawAngles[0], ANGLE_EPSILON);
         Assert.assertEquals(0, rawAngles[1], ANGLE_EPSILON);
         Assert.assertEquals(0, rawAngles[2], ANGLE_EPSILON);
@@ -93,9 +92,9 @@ public class TestPigeonImu extends BaseSimulatorTest
         DataAccessorFactory.getInstance().getGyroAccessor().setAngle(pitchPort, -98);
         DataAccessorFactory.getInstance().getGyroAccessor().setAngle(rollPort, 24);
 
-        imu.GetRawGyro(rawAngles);
-        fusedHeading = imu.GetFusedHeading(fusionStatus);
-        // Assert.assertEquals(47, fusedHeading, ANGLE_EPSILON);
+        imu.getRawGyro(rawAngles);
+        imu.getFusedHeading(fusionStatus);
+        Assert.assertEquals(47, fusionStatus.heading, ANGLE_EPSILON);
         Assert.assertEquals(47, rawAngles[0], ANGLE_EPSILON);
         Assert.assertEquals(-98, rawAngles[1], ANGLE_EPSILON);
         Assert.assertEquals(24, rawAngles[2], ANGLE_EPSILON);

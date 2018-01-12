@@ -1,272 +1,142 @@
 package com.snobot.simulator.simulator_components.ctre;
 
-import java.nio.ByteBuffer;
-
-import org.junit.Assert;
 import org.junit.Test;
 
-import com.ctre.CANTalon;
-import com.ctre.CANTalon.FeedbackDevice;
-import com.ctre.CANTalon.MotionProfileStatus;
-import com.ctre.CANTalon.StatusFrameRate;
-import com.ctre.CANTalon.TrajectoryPoint;
-import com.ctre.CanTalonJNI.param_t;
-import com.snobot.simulator.motor_sim.DcMotorModelConfig;
-import com.snobot.simulator.motor_sim.StaticLoadMotorSimulationConfig;
-import com.snobot.simulator.wrapper_accessors.DataAccessorFactory;
+import com.ctre.phoenix.ParamEnum;
+import com.ctre.phoenix.motion.MotionProfileStatus;
+import com.ctre.phoenix.motion.TrajectoryPoint;
+import com.ctre.phoenix.motorcontrol.ControlFrame;
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.Faults;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.LimitSwitchNormal;
+import com.ctre.phoenix.motorcontrol.LimitSwitchSource;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.RemoteFeedbackDevice;
+import com.ctre.phoenix.motorcontrol.RemoteLimitSwitchSource;
+import com.ctre.phoenix.motorcontrol.RemoteSensorSource;
+import com.ctre.phoenix.motorcontrol.SensorTerm;
+import com.ctre.phoenix.motorcontrol.StatusFrame;
+import com.ctre.phoenix.motorcontrol.StatusFrameEnhanced;
+import com.ctre.phoenix.motorcontrol.StickyFaults;
+import com.ctre.phoenix.motorcontrol.VelocityMeasPeriod;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.snobot.test.utilities.BaseSimulatorTest;
 
 public class TestUnsupportedTalonOperations extends BaseSimulatorTest
 {
-
-    @Test
-    public void testUnsupportedSend()
-    {
-        CtreTalonSrxDeviceManager deviceManager = new CtreTalonSrxDeviceManager();
-
-        deviceManager.handleSend(0xFFFFFFFF, 6, ByteBuffer.allocate(8), 8);
-    }
-
-    @Test
-    public void testUnsupportedReceive()
-    {
-        CtreTalonSrxDeviceManager deviceManager = new CtreTalonSrxDeviceManager();
-
-        Assert.assertEquals(0, deviceManager.handleReceive(0xFFFFFFFF, 6, ByteBuffer.allocate(8)));
-    }
-
-    @Test
-    public void testUnsupportedTxRequest1()
-    {
-        CtreTalonSrxDeviceManager deviceManager = new CtreTalonSrxDeviceManager();
-
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        buffer.putLong(0xFFFFFFFFFFFFFFFFL);
-        deviceManager.handleSend(0x0204000F, 6, buffer, 8);
-    }
-
-    @Test
-    public void testUnsupportedDemandCommand()
-    {
-        CtreTalonSrxDeviceManager deviceManager = new CtreTalonSrxDeviceManager();
-
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        buffer.putLong(0x000000000022EE00L);
-        deviceManager.handleSend(0x0204000F, 6, buffer, 8);
-    }
-
-    @Test
-    public void testUnsupportedSetParam()
-    {
-        CtreTalonSrxDeviceManager deviceManager = new CtreTalonSrxDeviceManager();
-
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        buffer.putLong(0xFFFFFFFFFFFFFFFFL);
-        deviceManager.handleSend(0x02041880, 6, buffer, 8);
-    }
-
-    @Test
-    public void testUnsupportedParamRequest()
-    {
-        CtreTalonSrxDeviceManager deviceManager = new CtreTalonSrxDeviceManager();
-
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        buffer.putLong(0xFFFFFFFFFFFFFFFFL);
-        deviceManager.handleSend(0x02041800, 6, buffer, 8);
-    }
-
-    @Test
-    public void testSetEncoderPosition()
-    {
-        int handle = 10;
-        int mRawHandle = handle + 100;
-        CANTalon talon = new CANTalon(handle);
-
-        DcMotorModelConfig motorConfig = DataAccessorFactory.getInstance().getSimulatorDataAccessor().createMotor("CIM", 1, 10, 1);
-        Assert.assertTrue(DataAccessorFactory.getInstance().getSimulatorDataAccessor().setSpeedControllerModel_Static(mRawHandle, motorConfig,
-                new StaticLoadMotorSimulationConfig(0.01)));
-
-        System.out.println(talon.getEncPosition());
-        Assert.assertEquals(0, talon.getEncPosition(), .05);
-        Assert.assertEquals(0, DataAccessorFactory.getInstance().getSpeedControllerAccessor().getPosition(mRawHandle), .05);
-
-        talon.setEncPosition(50);
-        Assert.assertEquals(50, talon.getEncPosition(), .05);
-        Assert.assertEquals(50, DataAccessorFactory.getInstance().getSpeedControllerAccessor().getPosition(mRawHandle), .05);
-
-    }
-
     @Test
     public void testAllFunctions()
     {
-        CANTalon climber = new CANTalon(11);
+        TalonSRX motorToFollow = new TalonSRX(0);
+        TalonSRX motorToTest = new TalonSRX(11);
 
-        climber.changeControlMode(CANTalon.TalonControlMode.Voltage);
-        climber.changeMotionControlFramePeriod(10);
-        climber.clearIAccum();
-        climber.ClearIaccum();
-        climber.clearMotionProfileHasUnderrun();
-        climber.clearMotionProfileTrajectories();
-        climber.clearStickyFaults();
-        climber.configEncoderCodesPerRev(100);
-        climber.ConfigFwdLimitSwitchNormallyOpen(true);
-        climber.ConfigFwdLimitSwitchNormallyOpen(false);
-        climber.configMaxOutputVoltage(10);
-        climber.configNominalOutputVoltage(-5, 5);
-        climber.configPeakOutputVoltage(1, -4);
-        climber.configPotentiometerTurns(4);
-        climber.ConfigRevLimitSwitchNormallyOpen(true);
-        climber.ConfigRevLimitSwitchNormallyOpen(false);
-        climber.disable();
-        climber.disableControl();
-        // climber.DisableNominalClosedLoopVoltage(); // TODO
-        climber.enable();
-        climber.enableBrakeMode(true);
-        climber.enableBrakeMode(false);
-        climber.enableControl();
-        climber.EnableCurrentLimit(true);
-        climber.EnableCurrentLimit(false);
-        climber.enableForwardSoftLimit(true);
-        climber.enableForwardSoftLimit(false);
-        climber.enableLimitSwitch(true, true);
-        climber.enableLimitSwitch(false, true);
-        climber.enableLimitSwitch(true, false);
-        climber.enableLimitSwitch(false, false);
-        climber.enableReverseSoftLimit(true);
-        climber.enableReverseSoftLimit(false);;
-        climber.enableZeroSensorPositionOnForwardLimit(true);
-        climber.enableZeroSensorPositionOnForwardLimit(false);
-        climber.enableZeroSensorPositionOnIndex(true, true);
-        climber.enableZeroSensorPositionOnIndex(true, false);
-        climber.enableZeroSensorPositionOnIndex(false, true);
-        climber.enableZeroSensorPositionOnIndex(false, false);
-        climber.enableZeroSensorPositionOnReverseLimit(true);
-        climber.enableZeroSensorPositionOnReverseLimit(false);
-        climber.get();
-        climber.getAnalogInPosition();
-        climber.getAnalogInRaw();
-        climber.getAnalogInVelocity();
-        climber.getBrakeEnableDuringNeutral();
-        climber.getBusVoltage();
-        climber.getClosedLoopError();
-        climber.getCloseLoopRampRate();
-        climber.getControlMode();
-        climber.getD();
-        climber.getDescription();
-        climber.getDeviceID();
-        climber.getEncPosition();
-        climber.getEncVelocity();
-        climber.getError();
-        climber.getExpiration();
-        climber.getF();
-        climber.getFaultForLim();
-        climber.getFaultForSoftLim();
-        climber.getFaultHardwareFailure();
-        climber.getFaultOverTemp();
-        climber.getFaultRevLim();
-        climber.getFaultRevSoftLim();
-        climber.getFaultUnderVoltage();
-        climber.GetFirmwareVersion();
-        climber.getForwardSoftLimit();
-        climber.getI();
-        climber.GetIaccum();
-        climber.getInverted();
-        climber.getIZone();
-        climber.getLastError();
-        climber.getMotionMagicAcceleration();
-        // climber.getMotionMagicActTrajPosition(); // TODO doesn't work
-        // climber.getMotionMagicActTrajVelocity(); // TODO doesn't work
-        climber.getMotionMagicCruiseVelocity();
-        climber.getMotionProfileStatus(new MotionProfileStatus());
-        climber.getMotionProfileTopLevelBufferCount();
-        // climber.GetNominalClosedLoopVoltage(); // TODO doesn't work
-        climber.getNumberOfQuadIdxRises();
-        climber.getOutputCurrent();
-        climber.getOutputVoltage();
-        climber.getP();
-        // climber.getParameter(param_t.eAinPosition);
-        climber.getPIDSourceType();
-        climber.getPinStateQuadA();
-        climber.getPinStateQuadB();
-        climber.getPinStateQuadIdx();
-        climber.getPosition();
-        climber.getPulseWidthPosition();
-        climber.getPulseWidthRiseToFallUs();
-        climber.getPulseWidthRiseToRiseUs();
-        climber.getPulseWidthVelocity();
-        climber.getReverseSoftLimit();
-        climber.getSetpoint();
-        climber.getSpeed();
-        climber.getStickyFaultForLim();
-        climber.getStickyFaultForSoftLim();
-        climber.getStickyFaultOverTemp();
-        climber.getStickyFaultRevLim();
-        climber.getStickyFaultRevSoftLim();
-        climber.getStickyFaultUnderVoltage();
-        climber.getTemperature();
-        // climber.GetVelocityMeasurementPeriod(); // TODO doesn't work
-        // climber.GetVelocityMeasurementWindow(); // TODO doesn't work
-        climber.isAlive();
-        climber.isControlEnabled();
-        climber.isEnabled();
-        climber.isForwardSoftLimitEnabled();
-        climber.isFwdLimitSwitchClosed();
-        climber.isMotionProfileTopLevelBufferFull();
-        climber.isReverseSoftLimitEnabled();
-        climber.isRevLimitSwitchClosed();
-        climber.isSafetyEnabled();
-        climber.isSensorPresent(FeedbackDevice.AnalogEncoder);
-        climber.isZeroSensorPosOnFwdLimitEnabled();
-        climber.isZeroSensorPosOnIndexEnabled();
-        climber.isZeroSensorPosOnRevLimitEnabled();
-        climber.pidGet();
-        // climber.pidWrite(.6);
-        climber.processMotionProfileBuffer();
-        climber.pushMotionProfileTrajectory(new TrajectoryPoint());
-        climber.reset();
-        climber.reverseOutput(true);
-        climber.reverseOutput(false);
-        climber.reverseSensor(true);
-        climber.reverseSensor(false);
-        climber.set(0);
-        climber.setAllowableClosedLoopErr(10);
-        climber.setAnalogPosition(30);
-        climber.setCloseLoopRampRate(4);
-        climber.setControlMode(4);
-        climber.setCurrentLimit(10);
-        climber.setD(0);
-        // climber.SetDataPortOutput(0, 0); // TODO doesn't work
-        // climber.SetDataPortOutputEnable(0, true);// TODO doesn't work
-        // climber.SetDataPortOutputPeriod(10);// TODO doesn't work
-        climber.setEncPosition(50);
-        climber.setExpiration(40);
-        climber.setF(30);
-        climber.setFeedbackDevice(FeedbackDevice.AnalogPot);
-        climber.setForwardSoftLimit(44);
-        climber.setI(.5);
-        climber.setInverted(true);
-        climber.setInverted(false);
-        climber.setIZone(0);
-        climber.setMotionMagicAcceleration(20);
-        climber.setMotionMagicCruiseVelocity(100);
-        climber.setP(11);
-        climber.setParameter(param_t.eEncPosition, 100);
-        climber.setPID(4, 5, 4);
-        climber.setPID(4, 5, 4, 5, 1, 0, 1);
-        climber.setPosition(40);
-        climber.setProfile(1);
-        climber.setPulseWidthPosition(40);
-        climber.setReverseSoftLimit(3);
-        climber.setSafetyEnabled(true);
-        climber.setSetpoint(40);
-        climber.setStatusFrameRateMs(StatusFrameRate.AnalogTempVbat, 10);
-        climber.setStatusFrameRateMs(StatusFrameRate.Feedback, 10);
-        climber.setStatusFrameRateMs(StatusFrameRate.General, 10);
-        climber.setStatusFrameRateMs(StatusFrameRate.PulseWidth, 10);
-        climber.setStatusFrameRateMs(StatusFrameRate.QuadEncoder, 10);
-        // climber.SetVelocityMeasurementPeriod(null); // TODO doesn't work
-        // climber.SetVelocityMeasurementWindow(4); TODO doesn't work
-        climber.setVoltageCompensationRampRate(4);
-        climber.setVoltageRampRate(55);
+        motorToTest.getDeviceID();
+        for (ControlMode mode : ControlMode.values())
+        {
+            motorToTest.set(mode, 0);
+            motorToTest.set(mode, 0, 0);
+        }
+        motorToTest.getHandle();
+        motorToTest.getDeviceID();
+        motorToTest.neutralOutput();
+        motorToTest.setNeutralMode(NeutralMode.Brake);
+        motorToTest.enableHeadingHold(false);
+        motorToTest.selectDemandType(false);
+        motorToTest.setSensorPhase(false);
+        motorToTest.setInverted(false);
+        motorToTest.getInverted();
+        motorToTest.configOpenloopRamp(0, 0);
+        motorToTest.configClosedloopRamp(0, 0);
+        motorToTest.configPeakOutputForward(0, 0);
+        motorToTest.configPeakOutputReverse(0, 0);
+        motorToTest.configNominalOutputForward(0, 0);
+        motorToTest.configNominalOutputReverse(0, 0);
+        motorToTest.configNeutralDeadband(0, 0);
+        motorToTest.configVoltageCompSaturation(0, 0);
+        motorToTest.configVoltageMeasurementFilter(0, 0);
+        motorToTest.enableVoltageCompensation(false);
+        motorToTest.getBusVoltage();
+        motorToTest.getMotorOutputPercent();
+        motorToTest.getMotorOutputVoltage();
+        motorToTest.getOutputCurrent();
+        motorToTest.getTemperature();
+        motorToTest.configSelectedFeedbackSensor(RemoteFeedbackDevice.None, 0, 0);
+        motorToTest.configSelectedFeedbackSensor(FeedbackDevice.Analog, 0, 0);
+        motorToTest.configRemoteFeedbackFilter(0, RemoteSensorSource.CANifier_PWMInput0, 0, 0);
+        motorToTest.configSensorTerm(SensorTerm.Diff0, FeedbackDevice.Analog, 0);
+        motorToTest.getSelectedSensorPosition(0);
+        motorToTest.getSelectedSensorVelocity(0);
+        motorToTest.setSelectedSensorPosition(0, 0, 0);
+        motorToTest.setControlFramePeriod(ControlFrame.Control_3_General, 0);
+        motorToTest.setStatusFramePeriod(StatusFrame.Status_10_MotionMagic, 0, 0);
+        motorToTest.getStatusFramePeriod(StatusFrame.Status_10_MotionMagic, 0);
+        motorToTest.getStatusFramePeriod(StatusFrameEnhanced.Status_10_MotionMagic, 0);
+        motorToTest.configVelocityMeasurementPeriod(VelocityMeasPeriod.Period_100Ms, 0);
+        motorToTest.configVelocityMeasurementWindow(0, 0);
+        motorToTest.configForwardLimitSwitchSource(RemoteLimitSwitchSource.Deactivated, LimitSwitchNormal.Disabled, 0, 0);
+        motorToTest.configReverseLimitSwitchSource(RemoteLimitSwitchSource.Deactivated, LimitSwitchNormal.Disabled, 0, 0);
+        motorToTest.configForwardLimitSwitchSource(LimitSwitchSource.Deactivated, LimitSwitchNormal.Disabled, 0);
+        motorToTest.overrideLimitSwitchesEnable(false);
+        motorToTest.configForwardSoftLimitThreshold(0, 0);
+        motorToTest.configReverseSoftLimitThreshold(0, 0);
+        motorToTest.configForwardSoftLimitEnable(false, 0);
+        motorToTest.configReverseSoftLimitEnable(false, 0);
+        motorToTest.overrideSoftLimitsEnable(false);
+        motorToTest.config_kP(0, 0, 0);
+        motorToTest.config_kI(0, 0, 0);
+        motorToTest.config_kD(0, 0, 0);
+        motorToTest.config_kF(0, 0, 0);
+        motorToTest.config_IntegralZone(0, 0, 0);
+        motorToTest.configAllowableClosedloopError(0, 0, 0);
+        motorToTest.configMaxIntegralAccumulator(0, 0, 0);
+        motorToTest.setIntegralAccumulator(0, 0, 0);
+        motorToTest.getClosedLoopError(0);
+        motorToTest.getIntegralAccumulator(0);
+        motorToTest.getErrorDerivative(0);
+        motorToTest.selectProfileSlot(0, 0);
+        // motorToTest.getClosedLoopTarget(0);
+        motorToTest.getActiveTrajectoryPosition();
+        motorToTest.getActiveTrajectoryVelocity();
+        motorToTest.getActiveTrajectoryHeading();
+        motorToTest.configMotionCruiseVelocity(0, 0);
+        motorToTest.configMotionAcceleration(0, 0);
+        motorToTest.clearMotionProfileTrajectories();
+        motorToTest.getMotionProfileTopLevelBufferCount();
+        motorToTest.pushMotionProfileTrajectory(new TrajectoryPoint());
+        motorToTest.isMotionProfileTopLevelBufferFull();
+        motorToTest.processMotionProfileBuffer();
+        motorToTest.getMotionProfileStatus(new MotionProfileStatus());
+        motorToTest.clearMotionProfileHasUnderrun(0);
+        motorToTest.changeMotionControlFramePeriod(0);
+        motorToTest.getLastError();
+        motorToTest.getFaults(new Faults());
+        motorToTest.getStickyFaults(new StickyFaults()); // TODO bug in dependency
+        motorToTest.clearStickyFaults(0);
+        motorToTest.getFirmwareVersion();
+        motorToTest.hasResetOccurred();
+        motorToTest.configSetCustomParam(0, 0, 0);
+        motorToTest.configGetCustomParam(0, 0);
+        motorToTest.configSetParameter(ParamEnum.eAccumZ, 0, 0, 0, 0);
+        motorToTest.configSetParameter(0, 0, 0, 0, 0);
+        motorToTest.configGetParameter(ParamEnum.eAccumZ, 0, 0);
+        motorToTest.configGetParameter(0, 0, 0);
+        motorToTest.getBaseID();
+        motorToTest.follow(motorToFollow);
+        motorToTest.valueUpdated();
+        // motorToTest.getWPILIB_SpeedController();
+        motorToTest.getSensorCollection();
+        
+        // Enhanced Motor Controller
+        motorToTest.setStatusFramePeriod(StatusFrameEnhanced.Status_11_UartGadgeteer, 0, 0);
+        motorToTest.getStatusFramePeriod(StatusFrameEnhanced.Status_10_MotionMagic, 0);
+        motorToTest.configVelocityMeasurementPeriod(VelocityMeasPeriod.Period_100Ms, 0);
+        motorToTest.configVelocityMeasurementWindow(0, 0);
+        motorToTest.configForwardLimitSwitchSource(LimitSwitchSource.Deactivated, LimitSwitchNormal.Disabled, 0);
+        motorToTest.configReverseLimitSwitchSource(LimitSwitchSource.Deactivated, LimitSwitchNormal.Disabled, 0);
+        motorToTest.configPeakCurrentLimit(0, 0);
+        motorToTest.configPeakCurrentDuration(0, 0);
+        motorToTest.configContinuousCurrentLimit(0, 0);
+        motorToTest.enableCurrentLimit(false);
     }
 }

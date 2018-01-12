@@ -13,8 +13,6 @@ import java.nio.ByteOrder;
 import edu.wpi.first.wpilibj.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.wpilibj.hal.HAL;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
-import edu.wpi.first.wpilibj.livewindow.LiveWindowSendable;
 
 /**
  * Use a rate gyro to return the robots heading relative to a starting position. The Gyro class
@@ -26,8 +24,8 @@ import edu.wpi.first.wpilibj.livewindow.LiveWindowSendable;
  * <p>This class is for the digital ADXRS450 gyro sensor that connects via SPI.
  */
 @SuppressWarnings({"TypeName", "AbbreviationAsWordInName", "PMD.UnusedPrivateField"})
-public class ADXRS450_Gyro extends GyroBase implements Gyro, PIDSource, LiveWindowSendable {
-  private static final double kSamplePeriod = 0.001;
+public class ADXRS450_Gyro extends GyroBase implements Gyro, PIDSource, Sendable {
+  private static final double kSamplePeriod = 0.0005;
   private static final double kCalibrationSampleTime = 5.0;
   private static final double kDegreePerSecondPerLSB = 0.0125;
 
@@ -57,6 +55,7 @@ public class ADXRS450_Gyro extends GyroBase implements Gyro, PIDSource, LiveWind
    */
   public ADXRS450_Gyro(SPI.Port port) {
     m_spi = new SPI(port);
+
     m_spi.setClockRate(3000000);
     m_spi.setMSBFirst();
     m_spi.setSampleDataOnRising();
@@ -64,7 +63,6 @@ public class ADXRS450_Gyro extends GyroBase implements Gyro, PIDSource, LiveWind
     m_spi.setChipSelectActiveLow();
 
     // Validate the part ID
-        int xxx = readRegister(kPIDRegister);
     if ((readRegister(kPIDRegister) & 0xff00) != 0x5200) {
       m_spi.free();
       m_spi = null;
@@ -79,7 +77,7 @@ public class ADXRS450_Gyro extends GyroBase implements Gyro, PIDSource, LiveWind
     calibrate();
 
     HAL.report(tResourceType.kResourceType_ADXRS450, port.value);
-    LiveWindow.addSensor("ADXRS450_Gyro", port.value, this);
+    setName("ADXRS450_Gyro", port.value);
   }
 
   @Override
@@ -88,12 +86,12 @@ public class ADXRS450_Gyro extends GyroBase implements Gyro, PIDSource, LiveWind
       return;
     }
 
-    Timer.delay(0.1);
+        // Timer.delay(0.1);
 
     m_spi.setAccumulatorCenter(0);
     m_spi.resetAccumulator();
 
-        Timer.delay(.01);
+        // Timer.delay(kCalibrationSampleTime);
 
     m_spi.setAccumulatorCenter((int) m_spi.getAccumulatorAverage());
     m_spi.resetAccumulator();
@@ -112,7 +110,7 @@ public class ADXRS450_Gyro extends GyroBase implements Gyro, PIDSource, LiveWind
     int cmdhi = 0x8000 | (reg << 1);
     boolean parity = calcParity(cmdhi);
 
-    ByteBuffer buf = ByteBuffer.allocateDirect(4);
+    ByteBuffer buf = ByteBuffer.allocate(4);
     buf.order(ByteOrder.BIG_ENDIAN);
     buf.put(0, (byte) (cmdhi >> 8));
     buf.put(1, (byte) (cmdhi & 0xff));
@@ -138,6 +136,7 @@ public class ADXRS450_Gyro extends GyroBase implements Gyro, PIDSource, LiveWind
    */
   @Override
   public void free() {
+    super.free();
     if (m_spi != null) {
       m_spi.free();
       m_spi = null;

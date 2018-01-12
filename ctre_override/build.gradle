@@ -8,6 +8,9 @@ repositories {
     maven {
         url "http://dev.imjac.in/maven/"
     }
+    maven {
+        url "http://first.wpi.edu/FRC/roborio/maven/release/"
+    }
 }
 
 apply plugin: 'cpp'
@@ -16,7 +19,6 @@ apply plugin: 'visual-studio'
 apply plugin: 'edu.wpi.first.NativeUtils'
 
 apply from: '../config.gradle'
-apply from: "$rootDir/extract_hal_headers.gradle"
 
 
 sourceSets {
@@ -30,79 +32,57 @@ test {
 	ignoreFailures = !OperatingSystem.current().isWindows()
 }
 
-
-ext.addWpilibcToLinker = { linker->
-
-    if (OperatingSystem.current().isWindows())
-    {
-        linker.args extractWplibcLibraryZip.libsdir + "/windows/" + it.targetPlatform.architecture.name + "/shared/wpilibc.lib"
-    }
-    else if (OperatingSystem.current().isLinux())
-    {
-        linker.args extractWplibcLibraryZip.libsdir + "/linux/" + it.targetPlatform.architecture.name + "/shared/libwpilibc.so"
-    }
-}
-
-task packageNativeFilesInJar(type: Jar) {
+task packageNativeCtreFilesInJar(type: Jar) {
     destinationDir = project.buildDir
     classifier = "native-" + org.gradle.internal.os.OperatingSystem.current().getFamilyName();
 
     project.model {
         binaries {
             withType(SharedLibraryBinarySpec) { binary ->
-                if (binary.component.name == 'CTRLibDriverShared' || 
-                    binary.component.name == 'SnobotSimCppCtre' ||
-                    binary.component.name == 'SnobotSimJavaCtre') 
+                println binary.component.name
+                if (binary.component.name == 'CtrePhoenixJava' || 
+                    binary.component.name == 'CtreMockHooks') 
                 {
-                    from(binary.sharedLibraryFile) {
-                        into NativeUtils.getPlatformPath(binary)
-                    }
+                    from(binary.sharedLibraryFile)
                     dependsOn binary.buildTask
                 }
             }
         }
     }
-
 }
 
-apply from: "$rootDir/captureWpiLibraries.gradle"
-task combineNativeLibrariesIntoOne(type: Jar) {
-
-    dependsOn packageNativeFilesInJar
-    dependsOn captureWpiLibraries
-
-    def os_name = org.gradle.internal.os.OperatingSystem.current().getFamilyName();
-
-    classifier = "uber_native-" + os_name;
-    
-    packageNativeFilesInJar.outputs.files.each { 
-        from(zipTree(it))
-    }
-    
-    captureWpiLibraries.outputs.files.each {
-        from(zipTree(it))
-    }
-}
-
-build.dependsOn packageNativeFilesInJar
+build.dependsOn packageNativeCtreFilesInJar
 
 dependencies {
     compile project(":snobot_sim_utilities")
 }
 
 
-def jniClasses = ['com.ctre.CanTalonJNI']
+def jniClasses = ['com.ctre.phoenix.CTRLoggerJNI',
+                  'com.ctre.phoenix.CANifierJNI',
+                  'com.ctre.phoenix.motorcontrol.can.MotControllerJNI',
+                  'com.ctre.phoenix.sensors.PigeonImuJNI']
 
 model {
     jniConfigs {
-        CTRLibDriverShared(JNIConfig) {
+        CtrePhoenixJava(JNIConfig) {
             jniDefinitionClasses = jniClasses
             jniArmHeaderLocations = [ all: file("${projectDir}/../snobot_sim_gui/src/arm-linux-jni") ]
             sourceSets = [ project.sourceSets.main ]
         }
     }
     exportsConfigs {
-        CTRLibDriverShared(ExportsConfig) {
+        CtreMockHooks(ExportsConfig) {
+            x86SymbolFilter = { symbols->
+                def retList = []
+                return retList
+            }
+            x64SymbolFilter = { symbols->
+                def retList = []
+                return retList
+            }
+        }
+        CtrePhoenixJava(ExportsConfig) {
             x86SymbolFilter = { symbols->
                 def retList = []
                 return retList
@@ -113,102 +93,47 @@ model {
             }
         }
     }
-    
-    dependencyConfigs {
-        wpiutil(DependencyConfig) {
-            groupId = 'edu.wpi.first.wpiutil'
-            artifactId = 'wpiutil-cpp'
-            headerClassifier = 'headers'
-            ext = 'zip'
-            version = getWpiUtilVersion()
-            sharedConfigs = [ SnobotSimCppCtre: [],
-                              SnobotSimJavaCtre: [],
-                              CTRLibDriver: [] ]
-        }
-        ntcore(DependencyConfig) {
-            groupId = 'edu.wpi.first.ntcore'
-            artifactId = 'ntcore-cpp'
-            headerClassifier = 'headers'
-            ext = 'zip'
-            version = getNtCoreVersion()
-            sharedConfigs = [ SnobotSimCppCtre: [],
-                              CTRLibDriver: [] ]
-        }
-    }
 
     components {
-        SnobotSimJavaCtre(NativeLibrarySpec) {
-            baseName = 'SnobotSimJavaCtre'
+    
+        CtreMockHooks(NativeLibrarySpec) {
+
+            sources {
+                cpp {
+                    source {
+                        srcDirs = [ "mock_hooks/src"]
+                        includes = ["**/*.cpp"]
+                    }
+                    exportedHeaders {
+                        srcDirs = [ "ctre_libraries/include",
+                                    "mock_hooks/include"]
+                    }
+                }
+            }
+        }
+        
+        CtrePhoenixJava(NativeLibrarySpec) {
+            baseName = 'CTRE_PhoenixCCI'
             
             binaries {
-                withType(NativeBinarySpec) {
-                    if(it.targetPlatform.architecture.name != "athena")
-                    {
-                        addHalSimToLinker(linker)
-                    }
-                    else
-                    {
-                        buildable = false
-                    }
+                all {
+                   it.lib project: ':ctre_override', library: 'CtreMockHooks', linkage: 'shared'
                 }
             }
         
             sources {
                 cpp {
                     source {
-                        srcDirs = ['ctre_source/cpp/shared/lib',
-                                   'snobot_sim/shared/lib', 
-                                    'snobot_sim/java_simulator/lib' ]
+                        srcDirs = ['ctre_java_libraries/src']
                         includes = ["**/*.cpp"]
                     }
                     exportedHeaders {
-                        srcDirs = [
-                                   "ctre_source/cpp/shared/include",
-                                   "snobot_sim/java_simulator/include", 
-                                   "${extractHalHeadersZip.libsdir}"]
+                        srcDirs = [ "ctre_libraries/include"]
                     }
                 }
             }
         }
             
-        CTRLibDriverShared(NativeLibrarySpec) {
-            baseName = 'CTRLibDriver'
-                
-            binaries {
-                all {
-                   it.lib project: ':ctre_override', library: 'SnobotSimJavaCtre', linkage: 'static'
-                }
-                withType(NativeBinarySpec) {
-                    if(it.targetPlatform.architecture.name != "athena")
-                    {
-                        addHalSimToLinker(linker)
-                    }
-                    else
-                    {
-                        buildable = false
-                    }
-                }
-            }
-            sources {
-                cpp {
-                    source {
-                        srcDirs = [ 'java/jni', 
-                                    "ctre_source/java/jni/cpp"]
-                        includes = ["**/*.cpp"]
-                    }
-                    exportedHeaders {
-                        srcDirs = []
-                    }
-                }
-            }
-        }
-    }
-    binaries {
-        all {
-            tasks.withType(CppCompile) {
-                dependsOn extractHalHeadersZip
-            }
-        }
     }
 }
 

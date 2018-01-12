@@ -9,9 +9,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.ctre.CANTalon;
-import com.ctre.CANTalon.FeedbackDevice;
-import com.ctre.CANTalon.TalonControlMode;
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.snobot.simulator.motor_sim.DcMotorModelConfig;
 import com.snobot.simulator.motor_sim.StaticLoadMotorSimulationConfig;
 import com.snobot.simulator.wrapper_accessors.DataAccessorFactory;
@@ -27,10 +27,7 @@ public class TestCtreCanTalon_ControlSpeed extends BaseSimulatorTest
 
         for (int i = 0; i < 64; ++i)
         {
-
-            output.add(new Object[]{ i, FeedbackDevice.CtreMagEncoder_Relative });
-            output.add(new Object[]{ i, FeedbackDevice.CtreMagEncoder_Absolute });
-            // output.add(new Object[]{ i, FeedbackDevice.AnalogPot });
+            output.add(new Object[]{ i, FeedbackDevice.QuadEncoder });
         }
 
         return output;
@@ -51,11 +48,10 @@ public class TestCtreCanTalon_ControlSpeed extends BaseSimulatorTest
     public void testSetWithSpeedEncoder()
     {
         Assert.assertEquals(0, DataAccessorFactory.getInstance().getSpeedControllerAccessor().getPortList().size());
-        CANTalon talon = new CANTalon(mCanHandle);
+        TalonSRX talon = new TalonSRX(mCanHandle);
         Assert.assertEquals(1, DataAccessorFactory.getInstance().getSpeedControllerAccessor().getPortList().size());
 
-        talon.changeControlMode(TalonControlMode.Speed);
-        talon.setFeedbackDevice(mFeedbackDevice);
+        talon.configSelectedFeedbackSensor(mFeedbackDevice, 0, 0);
         checkForFeedbackDevice();
 
         // Simulate CIM drivetrain
@@ -63,31 +59,29 @@ public class TestCtreCanTalon_ControlSpeed extends BaseSimulatorTest
         Assert.assertTrue(DataAccessorFactory.getInstance().getSimulatorDataAccessor().setSpeedControllerModel_Static(mRawHandle, motorConfig,
                 new StaticLoadMotorSimulationConfig(.2)));
 
-        talon.setP(.045 * 4096);
-        talon.setF(0.018 * 4096);
-        talon.setIZone(1 * 4096);
+        talon.config_kP(0, .045, 5);
+        talon.config_kF(0, .018, 5);
+        talon.config_IntegralZone(0, 1, 5);
 
         // 55.8 max velocity
-        talon.set(40);
+        talon.set(ControlMode.Velocity, 40);
 
         simulateForTime(1, () ->
         {
         });
 
-        Assert.assertEquals(40, DataAccessorFactory.getInstance().getSpeedControllerAccessor().getVelocity(mRawHandle), .05);
-        Assert.assertEquals(40, talon.get(), .05);
+        Assert.assertEquals(40, DataAccessorFactory.getInstance().getSpeedControllerAccessor().getVelocity(mRawHandle), 1);
+        Assert.assertEquals(40, talon.getSelectedSensorVelocity(0), 1);
     }
 
     private void checkForFeedbackDevice()
     {
         switch (mFeedbackDevice)
         {
-        case CtreMagEncoder_Absolute:
-        case CtreMagEncoder_Relative:
+        case QuadEncoder:
             Assert.assertTrue(DataAccessorFactory.getInstance().getEncoderAccessor().getPortList().contains(mRawHandle));
             break;
-        case AnalogEncoder:
-        case AnalogPot:
+        case Analog:
             Assert.assertTrue(DataAccessorFactory.getInstance().getAnalogAccessor().getPortList().contains(mRawHandle));
             break;
         default:

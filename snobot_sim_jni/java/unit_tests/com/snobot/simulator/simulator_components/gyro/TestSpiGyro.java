@@ -66,8 +66,6 @@ public class TestSpiGyro extends BaseSimulatorTest
 
         // Reset
         gyro.reset();
-        DataAccessorFactory.getInstance().getGyroAccessor().setAngle(gyroHandle, 0);
-        Assert.assertEquals(0, DataAccessorFactory.getInstance().getGyroAccessor().getAngle(gyroHandle), DOUBLE_EPSILON);
         Assert.assertEquals(0, gyro.getAngle(), DOUBLE_EPSILON);
     }
 }

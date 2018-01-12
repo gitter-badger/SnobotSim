@@ -46,12 +46,6 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
             mF = 0;
             mIZone = 0;
         }
-
-        @Override
-        public String toString()
-        {
-            return "PIDFConstants [mP=" + mP + ", mI=" + mI + ", mD=" + mD + ", mF=" + mF + ", mIZone=" + mIZone + "]";
-        }
     }
 
     public static class MotionProfilePoint
@@ -114,27 +108,27 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
 
     public void setPGain(int aSlot, double aP)
     {
-        mPidConstants[aSlot].mP = aP / getPositionUnitConversion();
+        mPidConstants[aSlot].mP = aP;
     }
 
     public void setIGain(int aSlot, double aI)
     {
-        mPidConstants[aSlot].mI = aI / getPositionUnitConversion();
+        mPidConstants[aSlot].mI = aI;
     }
 
     public void setDGain(int aSlot, double aD)
     {
-        mPidConstants[aSlot].mD = aD / getPositionUnitConversion();
+        mPidConstants[aSlot].mD = aD;
     }
 
     public void setFGain(int aSlot, double aF)
     {
-        mPidConstants[aSlot].mF = aF / getPositionUnitConversion();
+        mPidConstants[aSlot].mF = aF;
     }
 
     public void setIZone(int aSlot, double aIzone)
     {
-        mPidConstants[aSlot].mIZone = aIzone / getPositionUnitConversion();
+        mPidConstants[aSlot].mIZone = aIzone;
     }
 
     public PIDFConstants getPidConstants(int aSlot)
@@ -282,18 +276,24 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
 
         mLastError = error;
 
-        String motionType = "Output: " + output + " Stage: " + (time_to_destination > time_to_stop ? " In constant velocity " : " In decel ");
-        DecimalFormat df = new DecimalFormat("0.00");
-        System.out.println("Motion Magic... " + 
-                "Goal: " + aControlGoal + ",\t" + 
-                "CurPos: " + df.format(aCurrentPosition) + ",\t" + 
-                "CurVel: " + df.format(aCurrentVelocity) + ",\t" + 
-                "PIDF: " + mPidConstants + ",\t" + 
-                "TimeToStop: " + df.format(time_to_stop) + ",\t" + 
-                "TimeToDestination: " + df.format(time_to_destination) + ",\t" + 
-                "err: " + df.format(error) + ",\t" +
-                "maxa: " + df.format(mMotionMagicMaxAcceleration) + ",\t" + "maxv: " + df.format(mMotionMagicMaxVelocity) + ",\t" + 
-                motionType);
+//        DecimalFormat df = new DecimalFormat("#.##");
+//        System.out.println("Motion Magic... " + 
+//                "Goal: " + aControlGoal + ", " + 
+//                "CurPos: " + df.format(aCurrentPosition) + ", " + 
+//                "CurVel: " + df.format(aCurrentVelocity) + ", " + 
+//                "TimeToStop: " + df.format(time_to_stop) + ", " + 
+//                "TimeToDestination: " + df.format(time_to_destination) + ", " + 
+//                "err: " + df.format(error) + ", " +
+//                "maxa: " + df.format(mMotionMagicMaxAcceleration) + ", " + "maxv: " + df.format(mMotionMagicMaxVelocity));
+//
+//        if (time_to_destination > time_to_stop)
+//        {
+        // LOGGER.log(Level.DEBUG, " In constant velocity " + output);
+//        }
+//        else
+//        {
+        // LOGGER.log(Level.DEBUG, " In decel " + output);
+//        }
 
         return output;
     }
@@ -327,11 +327,8 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
         double output = p_term + d_term + v_term;
 
         DecimalFormat df = new DecimalFormat("#.##");
-        sLOGGER.log(Level.WARN, 
-                output + "  (" + 
-                "P: " + df.format(aCurrentPosition) + ", " + "V: " + df.format(aCurrentVelocity) + " - " + 
-                "GP: " + aGoalPosition + ", GV: " + aGoalVelocity + ") " + 
-                "P: " + p_term + ", V: " + v_term);
+        System.out.println(output + "  (" + "P: " + df.format(aCurrentPosition) + ", " + "V: " + df.format(aCurrentVelocity) + " - " + "GP: "
+                + aGoalPosition + ", GV: " + aGoalVelocity + ") " + "P: " + p_term + ", V: " + v_term);
 
         return output;
     }
@@ -405,7 +402,7 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
         {
         // Default feedback sensor, handle with care
         case 0:
-            // newDevice = FeedbackDevice.QuadEncoder;
+            newDevice = FeedbackDevice.Encoder;
             break;
         case 2:
             newDevice = FeedbackDevice.Analog;
@@ -494,66 +491,22 @@ public class CtreTalonSrxSpeedControllerSim extends PwmWrapper
 
     private double getPositionUnitConversion()
     {
-        if (mFeedbackDevice == null)
-        {
-            return 1;
-        }
-
-        switch (mFeedbackDevice)
-        {
-        case Encoder:
-            return 4096;
-        default:
-            return 1;
-        }
+        return 1;
     }
 
     private double getVelocityUnitConversion()
     {
-        if (mFeedbackDevice == null)
-        {
-            return 1;
-        }
-
-        switch (mFeedbackDevice)
-        {
-        case Encoder:
-            return 6.85; // TODO random... look at core code
-        default:
-            return 1;
-        }
+        return 1;
     }
 
     private double getMotionMagicAccelerationUnitConversion()
     {
-        if (mFeedbackDevice == null)
-        {
-            return 1;
-        }
-
-        switch (mFeedbackDevice)
-        {
-        case Encoder:
-            return 6.7916666666;
-        default:
-            return 1;
-        }
+        return 1;
     }
 
     private double getMotionMagicVelocityUnitConversion()
     {
-        if (mFeedbackDevice == null)
-        {
-            return 1;
-        }
-
-        switch (mFeedbackDevice)
-        {
-        case Encoder:
-            return 6.75;
-        default:
-            return 1;
-        }
+        return 1;
     }
 
     public int getBinnedPosition()

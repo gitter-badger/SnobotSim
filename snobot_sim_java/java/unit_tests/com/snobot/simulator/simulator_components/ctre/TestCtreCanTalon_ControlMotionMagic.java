@@ -9,9 +9,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.ctre.CANTalon;
-import com.ctre.CANTalon.FeedbackDevice;
-import com.ctre.CANTalon.TalonControlMode;
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.snobot.simulator.motor_sim.DcMotorModelConfig;
 import com.snobot.simulator.motor_sim.StaticLoadMotorSimulationConfig;
 import com.snobot.simulator.wrapper_accessors.DataAccessorFactory;
@@ -32,9 +32,8 @@ public class TestCtreCanTalon_ControlMotionMagic extends BaseSimulatorTest
         for (int i = 0; i < 64; ++i)
         {
 
-            output.add(new Object[]{ i, FeedbackDevice.CtreMagEncoder_Relative });
-            output.add(new Object[]{ i, FeedbackDevice.CtreMagEncoder_Absolute });
-            output.add(new Object[]{ i, FeedbackDevice.AnalogPot });
+            output.add(new Object[]{ i, FeedbackDevice.Analog });
+            output.add(new Object[]{ i, FeedbackDevice.QuadEncoder });
         }
 
         return output;
@@ -52,7 +51,7 @@ public class TestCtreCanTalon_ControlMotionMagic extends BaseSimulatorTest
     {
 
         Assert.assertEquals(0, DataAccessorFactory.getInstance().getSpeedControllerAccessor().getPortList().size());
-        CANTalon talon = new CANTalon(mCanHandle);
+        TalonSRX talon = new TalonSRX(mCanHandle);
         Assert.assertEquals(1, DataAccessorFactory.getInstance().getSpeedControllerAccessor().getPortList().size());
 
         // Hookup motor config
@@ -60,25 +59,21 @@ public class TestCtreCanTalon_ControlMotionMagic extends BaseSimulatorTest
         Assert.assertTrue(DataAccessorFactory.getInstance().getSimulatorDataAccessor().setSpeedControllerModel_Static(mRawHandle, motorConfig,
                 new StaticLoadMotorSimulationConfig(.2)));
 
-        talon.setFeedbackDevice(mFeedbackDevice);
-        talon.changeControlMode(TalonControlMode.MotionMagic);
+        talon.config_kP(0, .11, 5);
+        talon.config_kI(0, .005, 5);
+        talon.config_kF(0, 0.018, 5);
+        talon.config_IntegralZone(0, 2, 5);
 
-        talon.setP(.11 * 4096);
-        talon.setI(.005 * 4096);
-        talon.setF(0.018 * 4096);
-        talon.setIZone(2 * 4096);
-
-        talon.configEncoderCodesPerRev(100);
-
-        talon.setMotionMagicCruiseVelocity(12);
-        talon.setMotionMagicAcceleration(24);
-        talon.set(30 * 12);
+        talon.configSelectedFeedbackSensor(mFeedbackDevice, 0, 5);
+        talon.configMotionCruiseVelocity(12, 0);
+        talon.configMotionAcceleration(24, 0);
+        talon.set(ControlMode.MotionMagic, 30 * 12);
 
         simulateForTime(8, () ->
         {
         });
 
-        Assert.assertEquals(0, talon.getClosedLoopError(), 2);
+        Assert.assertEquals(0, talon.getClosedLoopError(0), 2);
     }
 
 }
