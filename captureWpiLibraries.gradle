@@ -46,6 +46,7 @@ task captureWpiLibraries(type: Jar, dependsOn: extractWpilibjJniShared) {
         {
             println "Overriding dependency path for OSX"
             full_path = "$rootDir/build/dependencies/" + it + "/osxx86-64/osx/x86-64/shared"
+            os_name = os_name.replace(" ", "")
             
             // This one is different for some reason
  	        from("$rootDir/build/dependencies/" + it + "/os xx86-64/osx/x86-64/shared") {
