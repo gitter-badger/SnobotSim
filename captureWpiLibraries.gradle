@@ -59,4 +59,19 @@ task captureWpiLibraries(type: Jar, dependsOn: extractWpilibjJniShared) {
             include "*.dylib"
         }
  	}
+ 	
+ 	println "*******************************************"
+ 	println "Listing dependencies"
+ 	
+ 	
+    def dir = new File("$rootDir/build/dependencies/")
+    dir.eachFileRecurse (groovy.io.FileType.FILES) { file ->
+      if(!file.toString().endsWith(".h"))
+      {
+          print "  !!!"
+      }
+      println "  " + file.toString()
+    }
+ 	println "*******************************************"
+ 	
 }
