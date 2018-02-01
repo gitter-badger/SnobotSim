@@ -94,3 +94,27 @@ task wrapper(type: Wrapper) {
 
 apply from: "$rootDir/combine_libraries.gradle"
 
+
+task TEMP_PRINT_JARS {
+    println "LISTING JARS...."
+    
+    def libs_dir = file("$rootDir/snobot_sim_java/build/libs")
+    
+    FileCollection collection = files { libs_dir.listFiles() }
+    
+    collection.each {
+    
+        if (it.toString().contains("native"))
+        {
+            println "  got it " + it.toString()
+            
+            zipTree(it).each { file_inside ->
+                println "    " + file_inside.toString()
+            }
+            
+        }
+    }
+    
+    println "DONE LISTING"
+}
+
