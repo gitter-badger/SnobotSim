@@ -41,6 +41,18 @@ task captureWpiLibraries(type: Jar, dependsOn: extractWpilibjJniShared) {
                  
  	libraries.each{
  	    def full_path = "$rootDir/build/dependencies/" + it + "/" + os_name + "x86-64/" + os_name + "/x86-64/shared"
+ 	    
+        if(org.gradle.internal.os.OperatingSystem.current().isMacOsX())
+        {
+            println "Overriding dependency path for OSX"
+            full_path = "$rootDir/build/dependencies/" + it + "/osxx86-64/osx/x86-64/shared"
+            
+            // This one is different for some reason
+ 	        from("$rootDir/build/dependencies/" + it + "/os xx86-64/osx/x86-64/shared") {
+                into os_name + "/x86-64/"
+                include "*.dylib"
+            }
+        }
  	    from(full_path) {
             into os_name + "/x86-64/"
             include "*.dll"
